@@ -1,5 +1,8 @@
 import streamlit as st
 import yt_dlp
+from docx import Document
+from docx.shared import Pt, Inches
+from io import BytesIO
 
 strings = {
     "en": {
@@ -25,6 +28,50 @@ strings = {
         "errorFetch": "حدث خطأ أثناء جلب البيانات.",
     },
 }
+
+
+def create_word_document(results, lang_code):
+    """Create a Word document from the results."""
+    doc = Document()
+
+    # Add title
+    title = doc.add_heading(strings[lang_code]["resultTitle"], 0)
+
+    # Add table
+    table = doc.add_table(rows=1, cols=4)
+    table.style = "Light Grid Accent 1"
+
+    # Add header row
+    header_cells = table.rows[0].cells
+    header_cells[0].text = "URL"
+    header_cells[1].text = strings[lang_code]["labelTitle"]
+    header_cells[2].text = strings[lang_code]["labelChannel"]
+    header_cells[3].text = strings[lang_code]["labelDate"]
+
+    # Make header bold
+    for cell in header_cells:
+        for paragraph in cell.paragraphs:
+            for run in paragraph.runs:
+                run.font.bold = True
+
+    # Add data rows
+    for result in results:
+        row_cells = table.add_row().cells
+        row_cells[0].text = result["url"]
+        row_cells[1].text = result.get(strings[lang_code]["labelTitle"], "")
+        row_cells[2].text = result.get(strings[lang_code]["labelChannel"], "")
+        row_cells[3].text = result.get(strings[lang_code]["labelDate"], "")
+
+        # Add error message if present
+        if result.get("error"):
+            error_para = row_cells[1].paragraphs[0]
+            error_para.text = f"Error: {result['error']}"
+
+    # Convert to bytes
+    doc_bytes = BytesIO()
+    doc.save(doc_bytes)
+    doc_bytes.seek(0)
+    return doc_bytes.getvalue()
 
 
 st.set_page_config(page_title="YouTube Metadata", layout="centered")
@@ -114,3 +161,16 @@ if submit:
         st.subheader(strings[lang_code]["resultTitle"])
         # Display results as a table
         st.dataframe(results)
+
+        # Download button
+        doc_bytes = create_word_document(results, lang_code)
+        st.download_button(
+            label=(
+                "📥 Download as Word (.docx)"
+                if lang_code == "en"
+                else "📥 تحميل كملف Word"
+            ),
+            data=doc_bytes,
+            file_name="youtube_metadata.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )
