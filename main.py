@@ -13,6 +13,7 @@ strings = {
         "labelTitle": "Title",
         "labelChannel": "Channel",
         "labelDate": "Upload Date",
+        "labelLength": "Duration",
         "errorNoUrl": "Please provide a video URL.",
         "errorFetch": "Error fetching metadata.",
     },
@@ -24,6 +25,7 @@ strings = {
         "labelTitle": "العنوان",
         "labelChannel": "القناة",
         "labelDate": "تاريخ الرفع",
+        "labelLength": "المدة",
         "errorNoUrl": "يرجى إدخال رابط الفيديو.",
         "errorFetch": "حدث خطأ أثناء جلب البيانات.",
     },
@@ -38,7 +40,7 @@ def create_word_document(results, lang_code):
     title = doc.add_heading(strings[lang_code]["resultTitle"], 0)
 
     # Add table
-    table = doc.add_table(rows=1, cols=4)
+    table = doc.add_table(rows=1, cols=5)
     table.style = "Light Grid Accent 1"
 
     # Add header row
@@ -47,6 +49,7 @@ def create_word_document(results, lang_code):
     header_cells[1].text = strings[lang_code]["labelTitle"]
     header_cells[2].text = strings[lang_code]["labelChannel"]
     header_cells[3].text = strings[lang_code]["labelDate"]
+    header_cells[4].text = strings[lang_code]["labelLength"]
 
     # Make header bold
     for cell in header_cells:
@@ -61,6 +64,7 @@ def create_word_document(results, lang_code):
         row_cells[1].text = result.get(strings[lang_code]["labelTitle"], "")
         row_cells[2].text = result.get(strings[lang_code]["labelChannel"], "")
         row_cells[3].text = result.get(strings[lang_code]["labelDate"], "")
+        row_cells[4].text = result.get(strings[lang_code]["labelLength"], "")
 
         # Add error message if present
         if result.get("error"):
@@ -128,12 +132,26 @@ if submit:
                     else:
                         upload_date = "-"
 
+                    # Format duration
+                    duration_seconds = info.get("duration")
+                    if duration_seconds:
+                        hours = duration_seconds // 3600
+                        minutes = (duration_seconds % 3600) // 60
+                        seconds = duration_seconds % 60
+                        if hours > 0:
+                            duration_str = f"{hours}:{minutes:02d}:{seconds:02d}"
+                        else:
+                            duration_str = f"{minutes}:{seconds:02d}"
+                    else:
+                        duration_str = "-"
+
                     results.append(
                         {
                             "url": u,
                             strings[lang_code]["labelTitle"]: title,
                             strings[lang_code]["labelChannel"]: channel,
                             strings[lang_code]["labelDate"]: upload_date,
+                            strings[lang_code]["labelLength"]: duration_str,
                             "error": "",
                         }
                     )
@@ -144,6 +162,7 @@ if submit:
                             strings[lang_code]["labelTitle"]: "",
                             strings[lang_code]["labelChannel"]: "",
                             strings[lang_code]["labelDate"]: "",
+                            strings[lang_code]["labelLength"]: "",
                             "error": f"DownloadError: {e}",
                         }
                     )
@@ -154,6 +173,7 @@ if submit:
                             strings[lang_code]["labelTitle"]: "",
                             strings[lang_code]["labelChannel"]: "",
                             strings[lang_code]["labelDate"]: "",
+                            strings[lang_code]["labelLength"]: "",
                             "error": str(e),
                         }
                     )
